@@ -98,7 +98,7 @@ async function(req, res, next){
   try{
     let user = await Author.find({username: req.body.username, password: req.body.password});
 
-    jwt.sign({user: user}, process.env.KEY, (err, token) => {
+    jwt.sign({user: user}, process.env.KEY, { expiresIn: '24h' }, (err, token) => {
       res.json({
         token: token
       })
@@ -112,19 +112,31 @@ async function(req, res, next){
 //test token is working
 router.get('/loginsuccess', verifyToken, async function(req, res, next){
   try{
-    jwt.verify(req.token, process.env.KEY, (err, authData) => {
-      if(err){
-        res.sendStatus(403);
-      } else {
-        res.json({
+    jwt.verify(req.token, process.env.KEY, async function(err, authData){
+      res.json({
           message: "ok",
           authData
         })
-      }
     })
   }
   catch(err){
     return res.status(400).json({message: err})
+  }
+})
+
+//delete comment
+router.delete('/comment/:comment', verifyToken, async function(req, res, next){
+  try{
+    jwt.verify(req.token, process.env.KEY, async function(err, authData){
+      Comment.findByIdAndRemove(req.params.comment).then(()=> {
+        res.status(200).json({message: 'success'});
+      }).catch((err) => {
+        return res.status(400).json({message: err});
+      })
+    })
+  }
+  catch(err){
+    res.status(400).json({err});
   }
 })
 
