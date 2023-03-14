@@ -109,4 +109,36 @@ async function(req, res, next){
   }
 }])
 
+//test token is working
+router.get('/loginsuccess', verifyToken, async function(req, res, next){
+  try{
+    jwt.verify(req.token, process.env.KEY, (err, authData) => {
+      if(err){
+        res.sendStatus(403);
+      } else {
+        res.json({
+          message: "ok",
+          authData
+        })
+      }
+    })
+  }
+  catch(err){
+    return res.status(400).json({message: err})
+  }
+})
+
+function verifyToken(req, res, next){
+  const bearerHeader = req.headers['authorization'];
+  if(typeof bearerHeader !== 'undefined'){
+    const bearer = bearerHeader.split(' ');
+    const bearerToken = bearer[1];
+    req.token = bearerToken;
+    next();
+  } else {
+    //Forbidden
+    res.sendStatus(403);
+  }
+}
+
 module.exports = router;

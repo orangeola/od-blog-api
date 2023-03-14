@@ -12,6 +12,7 @@ async function main() {
   await mongoose.connect(mongoDB);
 }
 
+
 const app = express();
 
 app.use(express.json());
