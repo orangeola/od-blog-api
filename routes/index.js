@@ -154,6 +154,48 @@ router.delete('/comment/:comment', verifyToken, async function(req, res, next){
   }
 })
 
+//post create new post
+router.post('/post/new', [
+  body('title', 'Title required').trim().isLength({ min: 1 }).escape(),
+  body('text', 'Text required').trim().isLength({ min: 1 }).escape(),
+
+  verifyToken,
+
+  async function(req, res, next){
+    let errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        errors: errors.array(),
+        data: req.body
+      })
+    }
+    try{
+      let post = new Post({
+        title: req.body.title,
+        text: req.body.text,
+        date: new Date(),
+      })
+
+      jwt.verify(req.token, process.env.KEY, (err, authData) => {
+        if(err){
+          res.sendStatus(403);
+        }
+        else {
+          post.save().then(() => {
+            res.status(200).json({message: 'Post saved', post})
+          }).catch((err)=> {
+            res.status(400).json({err});
+          })
+        }
+      })
+    }
+    catch(err){
+      return res.status(400).json({err})
+    }
+  }
+])
+
 function verifyToken(req, res, next){
   const bearerHeader = req.headers['authorization'];
   if(typeof bearerHeader !== 'undefined'){
