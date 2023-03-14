@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { body, validationResult} = require('express-validator');
+const jwt = require('jsonwebtoken');
 
 const Author = require('../models/author');
 const Post = require('../models/post');
@@ -79,5 +80,33 @@ router.get('/post/:id', async function(req, res, next){
     return res.status(400).json({message: 'No post found'})
   }
 })
+
+//testing login with jwt
+router.post('/login', [
+body('username', 'Username required').trim().isLength({ min: 1 }).escape(),
+body('password', 'Password required').trim().isLength({ min: 1 }).escape(),
+
+async function(req, res, next){
+  let errors = validationResult(req);
+
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      errors: errors.array(),
+      data: req.body
+    })
+  }
+  try{
+    let user = await Author.find({username: req.body.username, password: req.body.password});
+
+    jwt.sign({user: user}, process.env.KEY, (err, token) => {
+      res.json({
+        token: token
+      })
+    });
+  }
+  catch(err){
+    return res.status(400).json({message: err});
+  }
+}])
 
 module.exports = router;
