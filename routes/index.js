@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const Author = require('../models/author');
 const Post = require('../models/post');
 const Comment = require('../models/comment');
+const { default: mongoose } = require('mongoose');
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -13,17 +14,6 @@ router.get('/', function(req, res, next) {
     message: "Hello World"
   });
 });
-
-//testing admin db get
-router.get('/admin', async function(req, res, next){
-  try{
-    let user = await Author.find({username: 'admin'});
-    return res.status(200).json({user})
-  }
-  catch(err){
-    return res.status(400).json({message: 'No users or error'})
-  }
-})
 
 //testing comment db get
 router.get('/post/:id/comment', async function(req, res, next){
@@ -195,6 +185,39 @@ router.post('/post/new', [
     }
   }
 ])
+
+//delete post and all comments
+router.delete('/post/:id', verifyToken, async function(req, res, next){
+  try{
+    jwt.verify(req.token, process.env.KEY, async function(err, authData){
+      if(err){
+        res.sendStatus(403);
+      }
+      else {
+        /*
+        Promise.allSettled([Post.findByIdAndRemove(req.params.id),
+           Comment.deleteMany({post: req.params.id})])
+           .then((values) => {
+            if(values[0].status === "rejected" || values[1].status === "rejected"){
+              return res.status(400).json({message: 'Post does not exist.'});
+            }
+            return res.status(200).json({message: 'success', authData});
+           })*/
+           if(mongoose.Types.ObjectId.isValid(req.params.id)){
+            let post = await Post.findByIdAndDelete({_id: req.params.id});
+            let comments = await Comment.deleteMany({post: req.params.id});
+            res.status(200).json({message: 'success', authData, post, comments});
+           } else {
+            res.status(404).json({message: 'invalid url'});
+           }
+
+      }
+    })
+  }
+  catch(err){
+    res.status(400).json({message: err});
+  }
+})
 
 function verifyToken(req, res, next){
   const bearerHeader = req.headers['authorization'];
