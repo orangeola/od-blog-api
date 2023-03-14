@@ -112,11 +112,16 @@ async function(req, res, next){
 //test token is working
 router.get('/loginsuccess', verifyToken, async function(req, res, next){
   try{
-    jwt.verify(req.token, process.env.KEY, async function(err, authData){
-      res.json({
+    jwt.verify(req.token, process.env.KEY, (err, authData) => {
+      if(err){
+        res.sendStatus(403);
+      }
+      else {
+        res.json({
           message: "ok",
           authData
         })
+      }
     })
   }
   catch(err){
@@ -127,12 +132,21 @@ router.get('/loginsuccess', verifyToken, async function(req, res, next){
 //delete comment
 router.delete('/comment/:comment', verifyToken, async function(req, res, next){
   try{
-    jwt.verify(req.token, process.env.KEY, async function(err, authData){
-      Comment.findByIdAndRemove(req.params.comment).then(()=> {
-        res.status(200).json({message: 'success'});
-      }).catch((err) => {
-        return res.status(400).json({message: err});
-      })
+    jwt.verify(req.token, process.env.KEY, (err, authData) => {
+      if(err){
+        res.sendStatus(403);
+      }
+      else {
+        Comment.findByIdAndRemove(req.params.comment).then((del) => {
+          if(del !== null){
+            res.status(200).json({message: 'success', authData});
+          } else {
+            throw err;
+          }
+        }).catch((err)=>{
+          res.status(400).json({message: 'Comment does not exist'});
+        })
+      }
     })
   }
   catch(err){
