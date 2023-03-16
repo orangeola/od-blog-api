@@ -105,11 +105,15 @@ async function(req, res, next){
   try{
     let user = await Author.find({username: req.body.username, password: req.body.password});
 
-    jwt.sign({user: user}, process.env.KEY, { expiresIn: '24h' }, (err, token) => {
-      res.json({
-        token: token
-      })
-    });
+    if(user.length !== 0){
+      jwt.sign({user: user}, process.env.KEY, { expiresIn: '24h' }, (err, token) => {
+        res.json({
+          token: token
+        })
+      });
+    } else {
+      return res.status(400).json({errors: [{msg: "Wrong username/password", param: "err"}]})
+    }
   }
   catch(err){
     return res.status(400).json({message: err});
@@ -121,7 +125,7 @@ router.delete('/comment/:comment', verifyToken, async function(req, res, next){
   try{
     jwt.verify(req.token, process.env.KEY, (err, authData) => {
       if(err){
-        res.sendStatus(403);
+        res.sendStatus(403).json({message: 'Forbidden'});
       }
       else {
         Comment.findByIdAndRemove(req.params.comment).then((del) => {
