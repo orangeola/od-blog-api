@@ -187,6 +187,45 @@ router.post('/post/new', [
   }
 ])
 
+//update existing post
+router.put('/post/:id/update', [
+  body('title', 'Title required').trim().isLength({ min: 1 }),
+  body('text', 'Text required').trim().isLength({ min: 1 }),
+
+  verifyToken,
+
+  async function(req, res, next){
+    let errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        errors: errors.array(),
+        data: req.body
+      })
+    }
+    try{
+      let post = new Post({
+        title: req.body.title,
+        text: req.body.text,
+        _id: req.params.id,
+      })
+
+      jwt.verify(req.token, process.env.KEY, async function(err, authData){
+        if(err){
+          res.sendStatus(403);
+        }
+        else {
+          let update = await Post.findByIdAndUpdate({_id: req.params.id}, post, {returnDocument: 'after'});
+          res.status(200).json({message: 'success', authData, update});
+        }
+      })
+    }
+    catch(err){
+      return res.status(400).json({err})
+    }
+  }
+])
+
 //delete post and all comments
 router.delete('/post/:id', verifyToken, async function(req, res, next){
   try{
